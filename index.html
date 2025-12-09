@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Tapiocarias - João Pessoa</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* MOBILE FIRST - Estilos base para mobile */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .container {
+            width: 100%;
+            padding: 15px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #ff6b6b, #ffa726);
+            color: white;
+            padding: 20px 0;
+            border-radius: 0;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .header-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            font-weight: 300;
+            text-align: center;
+            padding: 0 10px;
+        }
+
+        .stats-summary {
+            display: flex;
+            justify-content: space-around;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 12px 15px;
+            border-radius: 8px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
+        .filters {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+            font-size: 0.85rem;
+        }
+
+        select,
+        input {
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            background-color: white;
+            width: 100%;
+        }
+
+        select:focus,
+        input:focus {
+            outline: none;
+            border-color: #ffa726;
+            box-shadow: 0 0 0 2px rgba(255, 167, 38, 0.2);
+        }
+
+        .btn {
+            padding: 12px 18px;
+            background-color: #ffa726;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            font-size: 0.95rem;
+        }
+
+        .btn:hover {
+            background-color: #ff9800;
+            transform: translateY(-2px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .dashboard-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .card-header {
+            background-color: #ffa726;
+            color: white;
+            padding: 12px 15px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+        }
+
+        .card-content {
+            padding: 15px;
+            height: 300px;
+        }
+
+        #map {
+            height: 100%;
+            border-radius: 5px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 100%;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 600;
+            color: #555;
+            border-bottom: 2px solid #eee;
+            position: sticky;
+            top: 0;
+            font-size: 0.85rem;
+        }
+
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.85rem;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .rating {
+            color: #ffa726;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .reviews {
+            color: #777;
+            font-size: 0.8rem;
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: #e3f2fd;
+            color: #1976d2;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .full-width {
+            width: 100%;
+        }
+
+        footer {
+            text-align: center;
+            padding: 15px;
+            margin-top: 20px;
+            color: #777;
+            font-size: 0.8rem;
+            border-top: 1px solid #eee;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            font-size: 0.75rem;
+            justify-content: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .no-data {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: #777;
+            font-style: italic;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .card-action-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 5px;
+        }
+
+        .restaurant-count {
+            background-color: rgba(0, 0, 0, 0.1);
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+        }
+
+        .export-btn {
+            background-color: #4caf50;
+        }
+
+        .export-btn:hover {
+            background-color: #388e3c;
+        }
+
+        .highlight {
+            background-color: #fff3e0;
+        }
+
+        /* Botão de ações na tabela para mobile */
+        .table-actions {
+            min-width: 70px;
+        }
+
+        /* Ajustes para telas pequenas - tablets em modo retrato */
+        @media (min-width: 576px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .card-content {
+                height: 350px;
+            }
+
+            .stats-summary {
+                gap: 15px;
+            }
+
+            .stat-card {
+                padding: 15px 20px;
+            }
+
+            .btn {
+                width: auto;
+            }
+
+            .filters {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .filter-group {
+                flex: 1;
+                min-width: 150px;
+            }
+        }
+
+        /* Ajustes para tablets em modo paisagem e desktops pequenos */
+        @media (min-width: 768px) {
+            .dashboard-grid {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 25px;
+            }
+
+            .card-content {
+                height: 400px;
+            }
+
+            .stats-summary {
+                justify-content: flex-start;
+                gap: 20px;
+            }
+
+            .header-content {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            h1 {
+                text-align: left;
+                font-size: 2.2rem;
+            }
+
+            .subtitle {
+                text-align: left;
+                padding: 0;
+            }
+
+            .filters {
+                padding: 20px;
+            }
+        }
+
+        /* Ajustes para desktops */
+        @media (min-width: 992px) {
+            .container {
+                max-width: 1400px;
+                margin: 0 auto;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 30px;
+            }
+
+            .card-content {
+                height: 450px;
+            }
+
+            .full-width {
+                grid-column: 1 / -1;
+            }
+
+            header {
+                border-radius: 0 0 15px 15px;
+                padding: 25px 0;
+                margin-bottom: 30px;
+            }
+
+            body {
+                font-size: 16px;
+            }
+
+            .filters {
+                margin-bottom: 30px;
+            }
+
+            .dashboard-grid {
+                margin-bottom: 30px;
+            }
+
+            footer {
+                margin-top: 30px;
+            }
+        }
+
+        /* Ajustes para desktops grandes */
+        @media (min-width: 1200px) {
+            .card-content {
+                height: 500px;
+            }
+
+            .table-container {
+                max-height: 500px;
+            }
+        }
+
+        /* Ajustes específicos para gráficos em telas pequenas */
+        @media (max-width: 767px) {
+            .chart-container canvas {
+                max-height: 250px !important;
+            }
+        }
+
+        /* Melhorias para a tabela em mobile */
+        @media (max-width: 576px) {
+            .table-container {
+                max-height: 350px;
+            }
+
+            th, td {
+                padding: 8px 6px;
+            }
+
+            .table-actions .btn {
+                padding: 4px 8px;
+                font-size: 0.75rem;
+            }
+        }
+
+        /* Ajuste para quando não há dados */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #777;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #ddd;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div>
+                    <h1><i class="fas fa-utensils"></i> Tapiocarias de João Pessoa</h1>
+                    <p class="subtitle">Explore as melhores tapiocarias da cidade com base em avaliações do Google Maps
+                    </p>
+                </div>
+                <div class="stats-summary">
+                    <div class="stat-card">
+                        <span class="stat-number" id="total-restaurants">0</span>
+                        <span class="stat-label">Tapiocarias</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="avg-rating">0.0</span>
+                        <span class="stat-label">Nota Média</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="total-reviews">0</span>
+                        <span class="stat-label">Avaliações</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="filters">
+            <div class="filter-group">
+                <label for="category-filter"><i class="fas fa-tag"></i> Categoria</label>
+                <select id="category-filter">
+                    <option value="all">Todas as Categorias</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="rating-filter"><i class="fas fa-star"></i> Nota Mínima</label>
+                <select id="rating-filter">
+                    <option value="0">Qualquer nota</option>
+                    <option value="4.5">4.5+ ⭐</option>
+                    <option value="4.0">4.0+ ⭐</option>
+                    <option value="3.5">3.5+ ⭐</option>
+                    <option value="3.0">3.0+ ⭐</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="reviews-filter"><i class="fas fa-comment"></i> Mín. de Avaliações</label>
+                <input type="number" id="reviews-filter" min="0" value="0">
+            </div>
+
+            <div class="filter-group">
+                <label for="search-filter"><i class="fas fa-search"></i> Buscar por nome</label>
+                <input type="text" id="search-filter" placeholder="Digite o nome...">
+            </div>
+
+            <button class="btn" id="apply-filters">
+                <i class="fas fa-filter"></i> Aplicar Filtros
+            </button>
+
+            <button class="btn export-btn" id="export-data">
+                <i class="fas fa-download"></i> Exportar
+            </button>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-map-marked-alt"></i> Mapa das Tapiocarias</span>
+                    <span class="restaurant-count" id="map-count">0</span>
+                </div>
+                <div class="card-content">
+                    <div id="map"></div>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #4CAF50;"></div>
+                            <span>Nota 4.5+</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #FFC107;"></div>
+                            <span>Nota 4.0-4.5</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #FF9800;"></div>
+                            <span>Nota 3.0-4.0</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #F44336;"></div>
+                            <span>Abaixo de 3.0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-chart-pie"></i> Distribuição por Categoria</span>
+                    <div class="card-actions">
+                        <button class="card-action-btn" id="toggle-chart-type" title="Alternar tipo de gráfico">
+                            <i class="fas fa-exchange-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card full-width">
+                <div class="card-header">
+                    <span><i class="fas fa-list"></i> Tapiocarias Filtradas</span>
+                    <span class="restaurant-count" id="table-count">0</span>
+                </div>
+                <div class="card-content table-container">
+                    <table id="restaurants-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Avaliação</th>
+                                <th>Nº de Avaliações</th>
+                                <th>Categoria</th>
+                                <th>Endereço</th>
+                                <th class="table-actions">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="restaurants-table-body">
+                            <!-- Dados serão inseridos aqui via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-chart-line"></i> Avaliação vs. Nº de Avaliações</span>
+                </div>
+                <div class="card-content">
+                    <div class="chart-container">
+                        <canvas id="ratingReviewsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-trophy"></i> Top 10 Melhores Avaliadas</span>
+                </div>
+                <div class="card-content">
+                    <div class="chart-container">
+                        <canvas id="topRatedChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Dashboard de Tapiocarias de João Pessoa | Dados extraídos do Google Maps | Atualizado em 2025</p>
+            <p>Desenvolvido para visualização de dados de tapiocarias organizadas</p>
+        </footer>
+    </div>
+
+    <script>
+        // Dados extraídos do CSV
+        const tapiocariasData = [
+{nome: "Snacks Delivery jp - Lanches", nota: 5.0, avaliacoes: 58, categoria: "Delivery", endereco: "R. Avelina dos Santos, 365", maps_url: "https://www.google.com/maps/place/Snacks+Delivery+jp+-+Lanches/data=!4m7!3m6!1s0x7acc10da18f34f7:0x752f4f9c68aa47be!8m2!3d-7.200759!4d-34.845389!16s%2Fg%2F11kqhlkxs4!19sChIJ9zSPoQ3BrAcRvkeqaJxPL3U?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipNeiAWeyheEAhL841_ZUGrZ8uomIrR7tc3XwG45=w92-h92-k-no", lat: -7.200759, lng: -34.845389},
+            {nome: "Tapioca Arretada", nota: 5.0, avaliacoes: 30, categoria: "Cafeteria", endereco: "Endereço não identificado", maps_url: "https://www.google.com/maps/place/Tapioca+Arretada/data=!4m7!3m6!1s0x7ace9003b46d741:0x2b529c4e4e8b7539!8m2!3d-7.1323664!4d-34.8804646!16s%2Fg%2F11w8n626zl!19sChIJQddGOwDprAcROXWLTk6cUis?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSw17ufvPhpGd4uwoXm1uLNG7pTgfnv_oDcRmnkWv-1RRqohxUt5V1GDBYjfbiBidX9xCgGrgKKt09Q3NFYwq4SOsbDuh0_liX_vTwXj3nUkszLIIEjfZ03muXgHXwftB2luCxYcVQ=w80-h106-k-no", lat: -7.1323664, lng: -34.8804646},
+            {nome: "Jampioca", nota: 5.0, avaliacoes: 26, categoria: "Restaurante", endereco: "Av. Cabo Branco, 1780", maps_url: "https://www.google.com/maps/place/Jampioca/data=!4m7!3m6!1s0x7acddb12663412d:0xc319978b1bdd7ad9!8m2!3d-7.1252833!4d-34.8239223!16s%2Fg%2F11j250xfc2!19sChIJLUFjJrHdrAcR2XrdG4uXGcM?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSz0ii3Ka1UoI6g8MEBS4yzxkNim3UCLC2JSH9oWqpU_mDLS-A8khHpBwpIljjBPUv4SO9oMHvAOmmnWWdz_aQU1akbZpZ9Myl2DUbppo_C5YPc_3xx6OQ1jDH-M5lDvStExicGr=w204-h92-k-no", lat: -7.1252833, lng: -34.8239223},
+            {nome: "Casa Sertaneja Tapiocaria", nota: 5.0, avaliacoes: 25, categoria: "Restaurante", endereco: "R. Manoel Medeiros Guedes, 111 - Sala 10", maps_url: "https://www.google.com/maps/place/Casa+Sertaneja+Tapiocaria/data=!4m7!3m6!1s0x7acdd754f513d1f:0x1ec235f33cdb877c!8m2!3d-7.0977488!4d-34.8396515!16s%2Fg%2F11t_rshz2p!19sChIJHz1RT3XdrAcRfIfbPPM1wh4?authuser=0&hl=pt-BR&rclk=1", imagem_url: "", lat: -7.0977488, lng: -34.8396515},
+            {nome: "Tapiocaria da Nice", nota: 5.0, avaliacoes: 22, categoria: "Restaurante", endereco: "R. Maria Regina Martins, 397", maps_url: "https://www.google.com/maps/place/Tapiocaria+da+Nice/data=!4m7!3m6!1s0x7acc3b00d6c3fb5:0x3f24347254b1794b!8m2!3d-7.1775742!4d-34.818621!16s%2Fg%2F11j8klcrsf!19sChIJtT9sDbDDrAcRS3mxVHI0JD8?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSzZgT3_gYaQOfIdoskCVvWL_cNz2LnahhBCZG93y-X5CMqtZ59CJ0LdVjHQGvYqHGqIEXfpFJDqDHV2ePCFJlkZCjc6m5VcfWzu5XkJ5ii6yv7A-8z5LQal1IIOGly3Ha_N_hpM=w163-h92-k-no", lat: -7.1775742, lng: -34.818621},
+            {nome: "Tapiocaria Dona Moça", nota: 5.0, avaliacoes: 14, categoria: "Café", endereco: "Av. Fagundes Varela, 60 B", maps_url: "https://www.google.com/maps/place/Tapiocaria+Dona+Mo%C3%A7a/data=!4m7!3m6!1s0x7ace772f21bb47b:0x7c8503db209f4585!8m2!3d-7.1066321!4d-34.8685828!16s%2Fg%2F11fkljzynh!19sChIJe7Qb8nLnrAcRhUWfINsDhXw?authuser=0&hl=pt-BR&rclk=1", imagem_url: "", lat: -7.1066321, lng: -34.8685828},
+            {nome: "Tapioca da Joana", nota: 5.0, avaliacoes: 9, categoria: "Lanchonete", endereco: "Endereço não identificado", maps_url: "https://www.google.com/maps/place/Tapioca+da+Joana/data=!4m7!3m6!1s0x7acc3e9b9166abb:0x9c0237b04c5d76e1!8m2!3d-7.1670664!4d-34.8343338!16s%2Fg%2F11nn147nbf!19sChIJu2oWuenDrAcR4XZdTLA3Apw?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipM23VHuRdOx-H_BFcjVSA1HXGdTWqePSuiNisN9=w80-h173-k-no", lat: -7.1670664, lng: -34.8343338},
+            {nome: "JW Doces e Salgados", nota: 5.0, avaliacoes: 6, categoria: "Lanchonete", endereco: "R. Profa. Aida Mont-Morency Pinheiro, 499", maps_url: "https://www.google.com/maps/place/JW+Doces+e+Salgados/data=!4m7!3m6!1s0x7acc359d6ec11f3:0x4fc92d26a61ec657!8m2!3d-7.1977219!4d-34.852582!16s%2Fg%2F11h2fwz8jb!19sChIJ8xHs1lnDrAcRV8YepiYtyU8?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipMihFBKnRLm6filsqNh7uwYT1iVio6fpptOoEJk=w122-h92-k-no", lat: -7.1977219, lng: -34.852582},
+            {nome: "Mais Café | Soparia e Cafeteria", nota: 5.0, avaliacoes: 6, categoria: "Cafeteria", endereco: "R. Dr. Valdevino Gregório de Andrade, 199", maps_url: "https://www.google.com/maps/place/Mais+Caf%C3%A9+%7C+Soparia+e+Cafeteria/data=!4m7!3m6!1s0x7acc1006866881b:0xe311df30b07e27e8!8m2!3d-7.2068019!4d-34.8519034!16s%2Fg%2F11wqxl8l09!19sChIJG4hmaADBrAcR6Cd-sDDfEeM?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipNstCSzj-qD6R5933E21OK7URONfDGOIRik3BBo=w80-h106-k-no", lat: -7.2068019, lng: -34.8519034},
+            {nome: "PONTO DA TAPIOCA & COMIDA REGIONAL", nota: 5.0, avaliacoes: 5, categoria: "Lanchonete", endereco: "Endereço não identificado", maps_url: "https://www.google.com/maps/place/PONTO+DA+TAPIOCA+%26+COMIDA+REGIONAL/data=!4m7!3m6!1s0x7acc1173d96fd37:0x510e388b127f3e27!8m2!3d-7.2062844!4d-34.8552336!16s%2Fg%2F11jh12zk44!19sChIJN_2WPRfBrAcRJz5_Eos4DlE?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipMBs2cnY6nsYDc6a5veB41Bo_M9EKQp2VxYyvOQ=w80-h106-k-no", lat: -7.2062844, lng: -34.8552336},
+            {nome: "Restaurante dos amigos", nota: 5.0, avaliacoes: 5, categoria: "Café da manhã", endereco: "R. Elias Cavalcanti de Albuquerque, 948", maps_url: "https://www.google.com/maps/place/Restaurante+dos+amigos/data=!4m7!3m6!1s0x7ace9bf4085e47b:0x8a34a654d862d003!8m2!3d-7.1567896!4d-34.8775548!16s%2Fg%2F11q3lwkv3l!19sChIJe-SFQL_prAcRA9Bi2FSmNIo?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSz8ToxQrQ0OO7HUCDUk6TjGeiJcsEseDU-Wkz0szxAYFYQ3Cjw6wjbKIWH-zQ99Vs_yyhBdqPW_75OCig4bb0ehd3Y7fCZohd0mLzgHGWMHRZixYSLktpc32RmOyQ31tfrjekKc=w80-h142-k-no", lat: -7.1567896, lng: -34.8775548},
+            {nome: "Das colegas, cuscuz e tapioca", nota: 5.0, avaliacoes: 4, categoria: "Lanchonete", endereco: "Rua Carlos Freitas Lins, R. Isabel Gomes de Lima, 14", maps_url: "https://www.google.com/maps/place/Das+colegas,+cuscuz+e+tapioca/data=!4m7!3m6!1s0x7acc1dccbb37cef:0x87a9825dcd69700f!8m2!3d-7.2039124!4d-34.8498287!16s%2Fg%2F11rwkr47wv!19sChIJ73yzy9zBrAcRD3BpzV2CqYc?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipMfMxMtaW60bgKRA6i_3IGG9dtCIVQ9mg5DoOCq=w80-h99-k-no", lat: -7.2039124, lng: -34.8498287},
+            {nome: "Tapiocaria do Neo", nota: 5.0, avaliacoes: 4, categoria: "Restaurante", endereco: "R. Funcionário Público Paulo Antônio Bastos Portela, 114", maps_url: "https://www.google.com/maps/place/Tapiocaria+do+Neo/data=!4m7!3m6!1s0x7acc13d22d3a21d:0x9a5b6ee5c2e04452!8m2!3d-7.2090085!4d-34.8507207!16s%2Fg%2F11rkp2gqnl!19sChIJHaLTIj3BrAcRUkTgwuVuW5o?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSxRGiff7ew2KsBlvdM1M5jCHplqUjqKKZtuPVAeVwk1BD8UWyOg2jjCOznBdfD8mCMtSdjLC6wgSEwfJYNNNl0Tt99--O5MCD1xSjdIGFJ7TeRUpb2-K9ASctNTtcwvkVQaI1ZTdQ=w80-h106-k-no", lat: -7.2090085, lng: -34.8507207},
+            {nome: "Oxente Tapiocaria", nota: 5.0, avaliacoes: 4, categoria: "Lanchonete", endereco: "R. Vicente Pessoa de Brito, 308", maps_url: "https://www.google.com/maps/place/Oxente+Tapiocaria/data=!4m7!3m6!1s0x7acc3e694dee327:0x2ed6b2f28dde555!8m2!3d-7.1599728!4d-34.8202775!16s%2Fg%2F11x8cg0wy3!19sChIJJ-PelObDrAcRVeXdKC9r7QI?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipOtDRTfVHkzv3eraNuHDwUwrSDohqkKwMUQrif9=w80-h100-k-no", lat: -7.1599728, lng: -34.8202775},
+            {nome: "Tapioca da Neta", nota: 5.0, avaliacoes: 4, categoria: "Cafeteria", endereco: "Av. Cruz das Armas, 999", maps_url: "https://www.google.com/maps/place/Tapioca+da+Neta/data=!4m7!3m6!1s0x7ace9007d502e85:0x8d57087613d02314!8m2!3d-7.1411539!4d-34.8895243!16s%2Fg%2F11ygg5pfmr!19sChIJhS5QfQDprAcRFCPQE3YIV40?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSwHCe0cB-CDCMK12dGlAWNF_iNdxlRYVMPSGpAKD3u_zrrBrVmwK62qfiNVn_CcQwzzf_5V5kJB0qipRynvzqzG0oR4WbTDKrYeQG-LgmIwwkbteJOmHJBCZDyl33XJfs8sn76gSj3HcU6B=w91-h92-k-no", lat: -7.1411539, lng: -34.8895243},
+            {nome: "Tapioca da Flavinha", nota: 5.0, avaliacoes: 2, categoria: "Cafeteria", endereco: "Av. Goiânia, 571", maps_url: "https://www.google.com/maps/place/Tapioca+da+Flavinha/data=!4m7!3m6!1s0x7acc1006f520411:0x69e7a05d61a55600!8m2!3d-7.2045539!4d-34.8559172!16s%2Fg%2F11w92wgqxc!19sChIJEQRSbwDBrAcRAFalYV2g52k?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=S9BN16Pm8R3gOcG8-5sxxA&cb_client=search.gws-prod.gps&w=80&h=92&yaw=300.06067&pitch=0&thumbfov=100", lat: -7.2045539, lng: -34.8559172},
+            {nome: "Tapiocão recheio JP", nota: 5.0, avaliacoes: 2, categoria: "Loja", endereco: "R. Vigilante Bernardino Alves Correia, 18", maps_url: "https://www.google.com/maps/place/Tapioc%C3%A3o+recheio+JP/data=!4m7!3m6!1s0x7ace9a41019535b:0xee1e1380cfe8a283!8m2!3d-7.1711773!4d-34.9100715!16s%2Fg%2F11jxthfh0v!19sChIJW1MZEKTprAcRg6Loz4ATHu4?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSyu57j1p3l7effC1SopWevghBEm_8tQai5a8ohWXsVrfaLjaqeKq0rwAhXsuO46cCIWD1chKisLiVa9cCjFLkUadDGhXojiB1mzijQ7M7NsCbBqJV2aaANNG7eITmrrlNvPRScD2Q=w135-h92-k-no", lat: -7.1711773, lng: -34.9100715},
+            {nome: "Tapioca do Luiz", nota: 5.0, avaliacoes: 2, categoria: "Cafeteria", endereco: "Av. Walfredo Macedo Brandão, 711", maps_url: "https://www.google.com/maps/place/Tapioca+do+Luiz/data=!4m7!3m6!1s0x7acc3004cda2ebd:0x2c6e6d922a898e91!8m2!3d-7.1551803!4d-34.8386881!16s%2Fg%2F11w3h58gxx!19sChIJvS7aTADDrAcRkY6JKpJtbiw?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSzRyCyzaPzCxPcgQTk3qrEcgX5JcthLC5d56K4_QLFGw1t5KXRNbhshNIiuhFQs_4bv8G8TagbwjhjLoc6QWX1lvZDJVg3nDWMVUFkwt71FNPhy_Ejo_sRo7leES2YtY0crZKVDOQ=w80-h106-k-no", lat: -7.1551803, lng: -34.8386881},
+            {nome: "Ponto da Tapioca", nota: 5.0, avaliacoes: 2, categoria: "Lanchonete", endereco: "Rua Efigênio Barbosa Silva", maps_url: "https://www.google.com/maps/place/Ponto+da+Tapioca/data=!4m7!3m6!1s0x7acc3aa525d8471:0x23d27d0ae7fff2a9!8m2!3d-7.1546407!4d-34.8376464!16s%2Fg%2F11q3dfjjty!19sChIJcYRdUqrDrAcRqfL_5wp90iM?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=rvakp_8G5gW2Q4A5h57t6A&cb_client=search.gws-prod.gps&w=80&h=92&yaw=14.341829&pitch=0&thumbfov=100", lat: -7.1546407, lng: -34.8376464},
+            {nome: "Rancho do Sabor", nota: 5.0, avaliacoes: 1, categoria: "Lanchonete", endereco: "Endereço não identificado", maps_url: "https://www.google.com/maps/place/Rancho+do+Sabor/data=!4m7!3m6!1s0x7acc1c430f0b28b:0x81c6aef647b061c8!8m2!3d-7.2077164!4d-34.8468814!16s%2Fg%2F11vm5zthdw!19sChIJi7LwMMTBrAcRyGGwR_auxoE?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipN7LongAXIA_beIek8rVlBuC6McLvT5tGXhjDIY=w122-h92-k-no", lat: -7.2077164, lng: -34.8468814},
+            {nome: "Box Da Tapioca", nota: 5.0, avaliacoes: 1, categoria: "Restaurante", endereco: "R. Funcionário Público Paulo Antônio Bastos Portela, 81", maps_url: "https://www.google.com/maps/place/Box+Da+Tapioca/data=!4m7!3m6!1s0x7acc1ef4f7e50c9:0xa8266decb5912129!8m2!3d-7.2104208!4d-34.850504!16s%2Fg%2F11rq24_q3x!19sChIJyVB-T-_BrAcRKSGRtextJqg?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=Qg8nfpEJt5dv-SapwWVlVg&cb_client=search.gws-prod.gps&w=80&h=92&yaw=43.604168&pitch=0&thumbfov=100", lat: -7.2104208, lng: -34.850504},
+            {nome: "Tapioca paixão", nota: 5.0, avaliacoes: 1, categoria: "Cafeteria", endereco: "Endereço não identificado", maps_url: "https://www.google.com/maps/place/Tapioca+paix%C3%A3o/data=!4m7!3m6!1s0x7acc3002bdac37b:0x81aaa1ef28143f0b!8m2!3d-7.1706276!4d-34.8392889!16s%2Fg%2F11lcysmscz!19sChIJe8PaKwDDrAcRCz8UKO-hqoE?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSwjHP57SW4dpN3guOza_Offxr2A3AImnQsaoVw2BfiyOz9OFHumtrp0SrkO9HagVS-fhlELKYcz3iJWENZhLriqODeRIY3h3Bno99oHBDq3x89AGE19nm7agvxxnXL9E-AMf1o=w80-h106-k-no", lat: -7.1706276, lng: -34.8392889},
+            {nome: "Império Da Tapioca", nota: 5.0, avaliacoes: 1, categoria: "Café da manhã", endereco: "Av. Eng. Elson Gouveia Falcone", maps_url: "https://www.google.com/maps/place/Imp%C3%A9rio+Da+Tapioca/data=!4m7!3m6!1s0x7acebe85ba6398f:0xcd803c6dba76dd5!8m2!3d-7.1962149!4d-34.884528!16s%2Fg%2F11y1xn3clf!19sChIJjzmmW-jrrAcR1W2n28YD2Aw?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSyNLAdvy5O_Wyeq5SdNH0r-Bzbmpf3OcG3e_PlqMHAXuaAwNbm-UK8HyzuriVreyEGgocRT3dGR8-cIOtIarUiijmmzEdQwxpZK6FQ18l-tYAE1pJnAvc9Xj9Z7rK_x3KELb2Qp8A=w80-h177-k-no", lat: -7.1962149, lng: -34.884528},
+            {nome: "Dogkebi lanches", nota: 5.0, avaliacoes: 1, categoria: "Diner", endereco: "Endereço não identificado", maps_url: "https://www.google.com/maps/place/Dogkebi+lanches/data=!4m7!3m6!1s0x7ace9edb3a008b9:0x8870463d135793b5!8m2!3d-7.1873326!4d-34.8797537!16s%2Fg%2F11qbchcp4j!19sChIJuQigs-3prAcRtZNXEz1GcIg?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipM5EtdjniGGyFl6PY0gBGeixiXlxVcjkLzmag6Z=w80-h99-k-no", lat: -7.1873326, lng: -34.8797537},
+            {nome: "Tapioca Da Praça", nota: 5.0, avaliacoes: 1, categoria: "Cafeteria", endereco: "Praça Dr Lauro Wanderley, 120", maps_url: "https://www.google.com/maps/place/Tapioca+Da+Pra%C3%A7a/data=!4m7!3m6!1s0x7ace9006c4fbfa7:0x828fa74a21f35c2e!8m2!3d-7.160956!4d-34.8930053!16s%2Fg%2F11ml4l59mk!19sChIJp79PbADprAcRLlzzIUqnj4I?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSzt-Zt6pgZSHVdWB6LqTMzLFqvk9AItqwIrdS3ARA7Utyl68BuguMQiSgly5QR5WmdPBY2ikzg4nchSvBw1M3_Z1ZiR8dknaqjNcttPNcQWZ23NV6Ybf3ommW0FgP-HBYJoAkjLyHAU_I9d=w122-h92-k-no", lat: -7.160956, lng: -34.8930053},
+            {nome: "Sensação Açaiteria", nota: 4.9, avaliacoes: 51, categoria: "Lanchonete", endereco: "R. Lourenço César, 160a", maps_url: "https://www.google.com/maps/place/Sensa%C3%A7%C3%A3o+A%C3%A7aiteria/data=!4m7!3m6!1s0x7ace9bf2a0d8379:0xc2b49b4c6f1badd3!8m2!3d-7.1704154!4d-34.8877154!16s%2Fg%2F11ggskqk_9!19sChIJeYMNKr_prAcR060bb0ybtMI?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipNk_H0ZoQo2CFdy6-sA9Kxwrtsmthcw1W15DG19=w80-h106-k-no", lat: -7.1704154, lng: -34.8877154},
+            {nome: "Panificadora Paulista Cristo", nota: 4.9, avaliacoes: 23, categoria: "Panificadora de pães no vapor", endereco: "Rua Rogério Benevides, 157", maps_url: "https://www.google.com/maps/place/Panificadora+Paulista+Cristo/data=!4m7!3m6!1s0x7ace99038d79023:0x4d1cde7e7321d96c!8m2!3d-7.1647075!4d-34.8732425!16s%2Fg%2F11w51_m0g5!19sChIJI5DXOJDprAcRbNkhc37eHE0?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipMlAsF6WsuRAm8neGfUjfMDVleAR0kLq_PptN8-=w80-h177-k-no", lat: -7.1647075, lng: -34.8732425},
+            {nome: "Tapioca capricho do Potência", nota: 4.8, avaliacoes: 63, categoria: "Lanchonete", endereco: "Av. Min. José Américo de Almeida", maps_url: "https://www.google.com/maps/place/Tapioca+capricho+do+Pot%C3%AAncia/data=!4m7!3m6!1s0x7acc3d687f144ad:0x2c9d5f1d8a488d4b!8m2!3d-7.1252302!4d-34.8415067!16s%2Fg%2F11hzqvzp7b!19sChIJrUTxh9bDrAcRS41Iih1fnSw?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipNpXmGj0z_qimyDp-vKh0ycikhUZwEMlZpbHbAv=w80-h106-k-no", lat: -7.1252302, lng: -34.8415067},
+            {nome: "Tia Tapiocaria", nota: 4.8, avaliacoes: 55, categoria: "Lanchonete", endereco: "R. Ten. Esdras Jorge de Carvalho, 110", maps_url: "https://www.google.com/maps/place/Tia+Tapiocaria/data=!4m7!3m6!1s0x7ace992e95f9e31:0x678c59326ccb68e2!8m2!3d-7.1837081!4d-34.8861356!16s%2Fg%2F11f0l466fk!19sChIJMZ5f6ZLprAcR4mjLbDJZjGc?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSzakqfl-f3LuybZH2Vq3byWVILJbz9vAsbAfpL4_agpoIgs_nuWeGEEK4rHYtdnA0CnHlUBkX6ACwT1ZHiJidSBfat3G7RaPJrRrdAG9RGxfO8Zh82z6RjwRnKt3CWjyyqy9VWm=w80-h106-k-no", lat: -7.1837081, lng: -34.8861356},
+            {nome: "M & A Lanches", nota: 4.8, avaliacoes: 16, categoria: "Lanchonete", endereco: "Endereço não identificado", maps_url: "https://www.google.com/maps/place/M+%26+A+Lanches/data=!4m7!3m6!1s0x7acc2592f0bb8e7:0xeecb1cb8e0cbdad1!8m2!3d-7.1650051!4d-34.8342551!16s%2Fg%2F11h9zz177_!19sChIJ57gLL1nCrAcR0drL4Lgcy-4?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSyWPK9BdeAjqrX9QyzHGz1Zfdp2RRekjJx3w77aWEZtjhMu0xLx-oKloYZwDwlL6McJXE3QwgO8gNwrOlmCbebKIsaR7o00ryX0d_iWvANQdR7j2thfwIRqvsx6Fa67dm1wnduY5g=w163-h92-k-no", lat: -7.1650051, lng: -34.8342551},
+            {nome: "Tapiocaria Donila", nota: 4.8, avaliacoes: 13, categoria: "Restaurante", endereco: "R. José Firmino Ferreira, 511", maps_url: "https://www.google.com/maps/place/Tapiocaria+Donila/data=!4m7!3m6!1s0x7acc35f99013483:0xe2fba7364dced1a2!8m2!3d-7.1507976!4d-34.8510076!16s%2Fg%2F11gmwylgbm!19sChIJgzQBmV_DrAcRotHOTTan--I?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=aUBnWtkr71hjmp46Z_agew&cb_client=search.gws-prod.gps&w=80&h=92&yaw=93.10527&pitch=0&thumbfov=100", lat: -7.1507976, lng: -34.8510076},
+            {nome: "Jardim cafeteria", nota: 4.7, avaliacoes: 254, categoria: "Restaurante", endereco: "R. Des. Aurélio M. de Albuquerque, 595", maps_url: "https://www.google.com/maps/place/Jardim+cafeteria/data=!4m7!3m6!1s0x7acc3e0854fec21:0xc342092982d10ab!8m2!3d-7.1587552!4d-34.8413394!16s%2Fg%2F11p66twkr2!19sChIJIexPheDDrAcRqxAtmJIgNAw?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipOTWQ3m-Qc6AZeL_lIloNqjREUbnJU5zBplw8S_=w80-h106-k-no", lat: -7.1587552, lng: -34.8413394},
+            {nome: "Maria Bonita Restaurante - Unidade Mangabeira", nota: 4.7, avaliacoes: 159, categoria: "Restaurante", endereco: "Rua Comerciante Alfredo Ferreira da Rocha, 1852", maps_url: "https://www.google.com/maps/place/Maria+Bonita+Restaurante+-+Unidade+Mangabeira/data=!4m7!3m6!1s0x7acc304117a352f:0xbf7c10974a6eda7b!8m2!3d-7.1786511!4d-34.8455!16s%2Fg%2F11kk_9xmgl!19sChIJLzV6EQTDrAcRe9puSpcQfL8?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSzHPXxNly8x8T929K4jHeuu0KAyIVs8bYReYFmD4Qf4HAnxyDlnsSx_qZe3cai-dwu3A-YefsBjB43hYsHGAh4FifnaRw6U440tPrMj5c9MePgyaSy07p8mjCXqjy5lwVS7xps=w80-h106-k-no", lat: -7.1786511, lng: -34.8455},
+            {nome: "Saborear Lanches", nota: 4.7, avaliacoes: 33, categoria: "Lanchonete", endereco: "Endereço não identificado", maps_url: "https://www.google.com/maps/place/Saborear+Lanches/data=!4m7!3m6!1s0x7acea21d3ef755b:0x6f2b1e31da91151c!8m2!3d-7.1967897!4d-34.8849464!16s%2Fg%2F11dz5rnjlv!19sChIJW3Xv0yHqrAcRHBWR2jEeK28?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSx_Tf-_WJtXG6wgb-DiZz3N5qaKk1qjwOmgmXzEFrlbh6EDxd9NCTh19ILLqieqq_r6VB2VNrZFBLpLjaWW6i8rMy_GGbC2Qnb2kVZK8SYejf2mDGR74LUe-2jJvRbPTpdo2GCL=w122-h92-k-no", lat: -7.1967897, lng: -34.8849464},
+            {nome: "Tapiocas da Lalita", nota: 4.7, avaliacoes: 31, categoria: "Ambiente familiar", endereco: "Av. Cel. Adolfo Massa", maps_url: "https://www.google.com/maps/place/Tapiocas+da+Lalita/data=!4m7!3m6!1s0x7ace85173c56525:0xceedf8b422f5877f!8m2!3d-7.1517951!4d-34.8973395!16s%2Fg%2F11fy4j5nhx!19sChIJJWXFc1HorAcRf4f1IrT47c4?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSzkmLT0MYPupFbMrDwz7Gud4Ib26Ys5_LETXzfA0HvmyAtfWYiNCWdbJCPsgg87m1mFlDCFy8o1LtSlHx03fWx_0UIXk9JxnH7AqL5omFiqQi91KHhNylgT9FCo1uZQ12rKUP1I=w80-h106-k-no", lat: -7.1517951, lng: -34.8973395},
+            {nome: "Lanchonete e Pomonharia sabores da terra", nota: 4.7, avaliacoes: 27, categoria: "Lanchonete", endereco: "R. Graciliano Delgado, 462", maps_url: "https://www.google.com/maps/place/Lanchonete+e+Pomonharia+sabores+da+terra/data=!4m7!3m6!1s0x7ace911a1625bff:0x1aefb62ea5590fe7!8m2!3d-7.1804858!4d-34.8960589!16s%2Fg%2F11s3vxgqlx!19sChIJ_1tioRHprAcR5w9ZpS627xo?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSwc6VdjzdohB3UWaoGUJ1gao1c8B2IrEaCRn1lQygepixJEP--tNXKqRZj1rOdfJkvSm0xyzSOwdkGpkB5bZCh0tthDPOzSfO-lALpV8axSy9DeQBEVdNZ8lGm4MWxmi1IBesgzxQ=w80-h142-k-no", lat: -7.1804858, lng: -34.8960589},
+            {nome: "Cantinho da tapioca", nota: 4.7, avaliacoes: 19, categoria: "Café da manhã", endereco: "Av. Hilton Souto Maior, 3234", maps_url: "https://www.google.com/maps/place/Cantinho+da+tapioca/data=!4m7!3m6!1s0x7acc3aec3e4a9f5:0x5dc7bfdca38e67dc!8m2!3d-7.1624285!4d-34.8357924!16s%2Fg%2F11j8jznn51!19sChIJ9ankw67DrAcR3GeOo9y_x10?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=rQ4c6iwFKAfzZv9yyfvNgA&cb_client=search.gws-prod.gps&w=80&h=92&yaw=230.21716&pitch=0&thumbfov=100", lat: -7.1624285, lng: -34.8357924},
+            {nome: "Tia Beré Bistrô Nordestino", nota: 4.6, avaliacoes: 468, categoria: "Restaurante", endereco: "R. Lourenço César, 9", maps_url: "https://www.google.com/maps/place/Tia+Ber%C3%A9+Bistr%C3%B4+Nordestino/data=!4m7!3m6!1s0x7ace9b90590b5dd:0x37f4325409417baf!8m2!3d-7.1695067!4d-34.8879042!16s%2Fg%2F11c2jy9_7w!19sChIJ3bWQBbnprAcRr3tBCVQy9Dc?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSwDXZsPvuKMgkcGsvpFk0r1co3PohBVhUG-MGbBuLoKshVVLSkHzoxkXcsY3bOAxwG0uIXMLUohBD5jkvspOlTy3DKRGkGoWoE9oouUVQcsuWwOrpsbfVBOf_GEbyM9Q8bMG74ifg=w80-h160-k-no", lat: -7.1695067, lng: -34.8879042},
+            {nome: "FrigoMaster", nota: 4.6, avaliacoes: 313, categoria: "Restaurante", endereco: "R. Paulo Gomes de Almeida, 152", maps_url: "https://www.google.com/maps/place/FrigoMaster/data=!4m7!3m6!1s0x7acc3d53f817e4d:0x234c606921121879!8m2!3d-7.1742796!4d-34.8601134!16s%2Fg%2F11kywg6vgv!19sChIJTX6BP9XDrAcReRgSIWlgTCM?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipOdxaifEVLzCxlDjZBdC_6oMA-PCvC7qtuyWvjQ=w122-h92-k-no", lat: -7.1742796, lng: -34.8601134},
+            {nome: "Açaí New Store", nota: 4.6, avaliacoes: 189, categoria: "Lanchonete", endereco: "R. Pres. Carlos Luz, 437", maps_url: "https://www.google.com/maps/place/A%C3%A7a%C3%AD+New+Store/data=!4m7!3m6!1s0x7ace9d292302d0d:0x5bf8e2bac700b4e0!8m2!3d-7.1605353!4d-34.8722591!16s%2Fg%2F11d_wvp13v!19sChIJDS0wktLprAcR4LQAx7ri-Fs?authuser=0&hl=pt-BR&rclk=1", imagem_url: "", lat: -7.1605353, lng: -34.8722591},
+            {nome: "Tapiocaria Tambau", nota: 4.6, avaliacoes: 134, categoria: "Lanchonete", endereco: "Av. Sen. Ruy Carneiro, 17", maps_url: "https://www.google.com/maps/place/Tapiocaria+Tambau/data=!4m7!3m6!1s0x7acdd23cde23009:0x4d81fd5c23c24b12!8m2!3d-7.1103693!4d-34.8241965!16s%2Fg%2F11gbks_zcg!19sChIJCTDizSPdrAcREkvCI1z9gU0?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSxPjt8VQA76octYmtLB3F66DD0TISPQEs_Pnwdd3TbNkX90vhs8epJFzyLNX-inG_ID_5kF7otQ_Gio5rXxCSYNM9Kh_jR9ofGh_un_90_FUo-9tvFs1GLqsZGgIuEMRxhD3toCfShmf4F-=w80-h106-k-no", lat: -7.1103693, lng: -34.8241965},
+            {nome: "Panda Lanches Lanchonete", nota: 4.6, avaliacoes: 68, categoria: "Lanchonete", endereco: "R. Anizio de Azevedo Lima, 186-332", maps_url: "https://www.google.com/maps/place/Panda+Lanches+Lanchonete/data=!4m7!3m6!1s0x7acc2148813c1db:0x6fc5df2a03d611cf!8m2!3d-7.1819323!4d-34.8433817!16s%2Fg%2F11ggzlh9gl!19sChIJ28ETiBTCrAcRzxHWAyrfxW8?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipN9SMuWWblydqv9jw0r-0sCmoXIN1017Po1Il2n=w92-h92-k-no", lat: -7.1819323, lng: -34.8433817},
+            {nome: "Açai Tropical José Américo", nota: 4.6, avaliacoes: 38, categoria: "Loja de açaí", endereco: "R. Funcionária Pública Geni Ferreira da Silva, 271", maps_url: "https://www.google.com/maps/place/A%C3%A7ai+Tropical+Jos%C3%A9+Am%C3%A9rico/data=!4m7!3m6!1s0x7acc35f1a7b829f:0x158ca6a19ea0f57c!8m2!3d-7.1725058!4d-34.8581378!16s%2Fg%2F11kc05p2pd!19sChIJn4J7Gl_DrAcRfPWgnqGmjBU?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipNuiCZIm43f78jiGYdTVxeMX-jUpZo2-0LCSayC=w149-h92-k-no", lat: -7.1725058, lng: -34.8581378},
+            {nome: "Cantinho da Bênção - Tapiocas", nota: 4.6, avaliacoes: 36, categoria: "Lanchonete", endereco: "R. Lino de Oliveira Cavalcante Neto, 38", maps_url: "https://www.google.com/maps/place/Cantinho+da+B%C3%AAn%C3%A7%C3%A3o+-+Tapiocas/data=!4m7!3m6!1s0x7acc1f1fbeea841:0x9a80cbb766fa7bd!8m2!3d-7.2064588!4d-34.8462696!16s%2Fg%2F11b67sh0l7!19sChIJQaju-_HBrAcRvadvdrsMqAk?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSzNKOiQLXtjfbrEqYO7yYnBSzpm_Ve2Dio032XNs43ZOeuoAFMT4mokM52dGxYqhw70Q43qSOtUOQXsGOp48P0PP0tJbldTmdQ8lgfWEU9aElMHnJNfyBHR6gYoyo1jLhc9l-Ht=w122-h92-k-no", lat: -7.2064588, lng: -34.8462696},
+            {nome: "Tapiocaria das Marias", nota: 4.6, avaliacoes: 12, categoria: "Restaurante", endereco: "R. Natalia Silva dos Santos, 10", maps_url: "https://www.google.com/maps/place/Tapiocaria+das+Marias/data=!4m7!3m6!1s0x7acc3993f481fb3:0x28be76b96cc6ad91!8m2!3d-7.1813269!4d-34.8349201!16s%2Fg%2F11vj3tfb3r!19sChIJsx9IP5nDrAcRka3GbLl2vig?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSyecy19hlQO4DRTnNkKFrcXaVOGRinF8y4ppJPNvjQ7iSwbinBDvPNQEZSi62GqTkZcfwiyprHAvbXaUgOoyH6BNYq4p4C_KHetP6JgduC1Frxex5fuqu1ZtNRzAnv2TYGj53molw=w80-h173-k-no", lat: -7.1813269, lng: -34.8349201},
+            {nome: "Panificadora Pernambucana Bancários", nota: 4.6, avaliacoes: 1, categoria: "Padaria", endereco: "R. Empresário João Rodrigues Alves, 722", maps_url: "https://www.google.com/maps/place/Panificadora+Pernambucana+Banc%C3%A1rios/data=!4m7!3m6!1s0x7acc2938e662fd9:0xe31914df62a959ff!8m2!3d-7.1482674!4d-34.8440623!16s%2Fg%2F11c0p_v6kn!19sChIJ2S9mjpPCrAcR_1mpYt8UGeM?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSwV-S-lshFcx5p2a0S_cq5Fw3vuOEdlu2RhytM6jocw_QYDEJ6nWrbs2co1rYVY0IdRIVcYptHxcfU7Owemvp7vZBfiVlP3gAOOhZIv09qUbHCR2J_G6EMXKIJiT5JErC2xtV99-Q=w80-h106-k-no", lat: -7.1482674, lng: -34.8440623},
+            {nome: "Lala Pizzaria & Lanchonete", nota: 4.5, avaliacoes: 504, categoria: "Pizza", endereco: "R. Cleonice de Oliveira Pinto, 108", maps_url: "https://www.google.com/maps/place/Lala+Pizzaria+%26+Lanchonete/data=!4m7!3m6!1s0x7acc277f64aa173:0xcba3604b620c35a0!8m2!3d-7.1690746!4d-34.8617418!16s%2Fg%2F11b69dk0f0!19sChIJc6FK9nfCrAcRoDUMYktgo8s?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSwFt-P_dyyW7263BPBo5_Gd66a34nwcmxQ3u7xqOMosGlbhjUdqgfXYcNpf9yAllKxKzFxiqAxOzStq4zz30g4DHHJp2BRJWaBIXo6hPMP4d9u9EqQgSuwZLG1SYJbiN0buakQ29g=w80-h106-k-no", lat: -7.1690746, lng: -34.8617418},
+            {nome: "Feijoada da Fernanda", nota: 4.5, avaliacoes: 257, categoria: "Restaurante", endereco: "Rua Adalgisa Carneiro Cavalcante", maps_url: "https://www.google.com/maps/place/Feijoada+da+Fernanda/data=!4m7!3m6!1s0x7acc20a366cb875:0x97e6d707dc956a1d!8m2!3d-7.1798142!4d-34.8611767!16s%2Fg%2F11f_1z3pmd!19sChIJdbhsNgrCrAcRHWqV3AfX5pc?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipP784nfeK38NMqhewPLrcEqoRJwLN81AeugPc5j=w80-h106-k-no", lat: -7.1798142, lng: -34.8611767},
+            {nome: "Restaurante Cuiá - Peixada e Petiscaria", nota: 4.5, avaliacoes: 247, categoria: "Restaurante", endereco: "R. Waldemar Dornelas dos Santos, 46", maps_url: "https://www.google.com/maps/place/Restaurante+Cui%C3%A1+-+Peixada+e+Petiscaria/data=!4m7!3m6!1s0x7acc3d3851492d5:0x1b465408cdda35a1!8m2!3d-7.1828737!4d-34.8593878!16s%2Fg%2F11swz96hvp!19sChIJ1ZIUhdPDrAcRoTXazQhURhs?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSyDiaFpv3dsmIk7usEHE1jOMsGtfg0YWjyzbpf5iJimeHF742CAFybrV4Tb9qTmGKv8ZuwIniW_pz4QwGfGn_gs0WzNOLktYGoH8EXAF5yuhsUJX8FgJYUCzpESgyY9ARQcFtpNSQS1Njr-=w80-h106-k-no", lat: -7.1828737, lng: -34.8593878},
+            {nome: "Vascão Lanches e Salgados", nota: 4.5, avaliacoes: 237, categoria: "Lanchonete", endereco: "Endereço não identificado", maps_url: "https://www.google.com/maps/place/Vasc%C3%A3o+Lanches+e+Salgados/data=!4m7!3m6!1s0x7acc2bd023fc4cd:0xb2541b5b7bce195b!8m2!3d-7.1433511!4d-34.8501335!16s%2Fg%2F11c2r04z2q!19sChIJzcQ_Ar3CrAcRWxnOe1sbVLI?authuser=0&hl=pt-BR&rclk=1", imagem_url: "", lat: -7.1433511, lng: -34.8501335},
+            {nome: "Dona Help Food", nota: 4.5, avaliacoes: 205, categoria: "Restaurante", endereco: "211, Via Expressa Padre Zé, 173", maps_url: "https://www.google.com/maps/place/Dona+Help+Food/data=!4m7!3m6!1s0x7acc2bc9a18c885:0x89537d73efa31ffa!8m2!3d-7.1387506!4d-34.8496524!16s%2Fg%2F11cjj07c44!19sChIJhcgYmrzCrAcR-h-j73N9U4k?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSyci-Iuu0R8wce6TFgGV1ivf87h9ZWkZP8i-bYJCmrDcSzeBI86OgFafKJ2TRIb79a5w85xltc5_MZVN2Pl0CBU0ZFY9EtVXVdXMDIwBd2LSBFxyL9sVNPL6M5MrkfA0PztrHWqyeXBDyY=w80-h106-k-no", lat: -7.1387506, lng: -34.8496524},
+            {nome: "Baixinho Lanches", nota: 4.5, avaliacoes: 124, categoria: "Lanchonete", endereco: "Av. Hilton Souto Maior, 690", maps_url: "https://www.google.com/maps/place/Baixinho+Lanches/data=!4m7!3m6!1s0x7acc377d9d41d17:0xff5b70aa44344ce1!8m2!3d-7.1635736!4d-34.8307375!16s%2Fg%2F11fs264mzh!19sChIJFx3U2XfDrAcR4Uw0RKpwW_8?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSzmdjklRDvLs6grUJQA8PzklZFaKrS9AxIdo5BSLwdR9Rp6RKUI2HXM5_OoJl0D9Ph67kpHt5S_GgI3VBfcPQU1t94365z_f0Ht0yWOnm9FTFDOGUQwK_TGe7wr55391D9h1kMYeQ=w80-h106-k-no", lat: -7.1635736, lng: -34.8307375},
+            {nome: "Ze Da Tapioca", nota: 4.5, avaliacoes: 26, categoria: "Café", endereco: "R. Mariangela Lucena Peixoto, 539-561", maps_url: "https://www.google.com/maps/place/Ze+Da+Tapioca/data=!4m7!3m6!1s0x7acc1f06554048b:0x76f6d3ea062d0e9b!8m2!3d-7.2046897!4d-34.8506696!16s%2Fg%2F11dxbv82d7!19sChIJiwRUZfDBrAcRmw4tBurT9nY?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSw0waaPKwJNUAhxk4z6sE4ZvwykoJuAfmJaJ4bdDedzTrtObzSWiW7yJHJMKnCXKl5EbM1xQAB1bWfLc4r_GiRqGj6a5-BSriY9_PTlXaX2uxHFZr27EkuhEmr5YB_bsEC1T3Sy=w80-h106-k-no", lat: -7.2046897, lng: -34.8506696},
+            {nome: "LLM RESTAURANTE E SOPARIA", nota: 4.5, avaliacoes: 24, categoria: "Restaurante", endereco: "avenida - R. Administrador Manoel Ângelo de Oliveira, 394", maps_url: "https://www.google.com/maps/place/LLM+RESTAURANTE+E+SOPARIA/data=!4m7!3m6!1s0x7acc25a36300001:0xa329de4466d6c578!8m2!3d-7.1681773!4d-34.8315807!16s%2Fg%2F11ggr5gd7d!19sChIJAQAwNlrCrAcReMXWZkTeKaM?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSzaTzag4Cr2nRLp17_3goY5xqeF4_-2mbcJV7aP_1d8tPuQBHPJfljWSa4tttKhSDHriUklOPiuS-5loHMpoqYr7fvNL1NBAWp7fRS96JNEwEuGleCnobB6j1zHd8qthHPWF0wO=w122-h92-k-no", lat: -7.1681773, lng: -34.8315807},
+            {nome: "Empório Dos Alimentos | Bancários", nota: 4.4, avaliacoes: 853, categoria: "Restaurante", endereco: "R. Rejane Freire Correia, 87", maps_url: "https://www.google.com/maps/place/Emp%C3%B3rio+Dos+Alimentos+%7C+Banc%C3%A1rios/data=!4m7!3m6!1s0x7acc2f1816962bd:0x4b5d468708e4d3a0!8m2!3d-7.155938!4d-34.8378127!16s%2Fg%2F11clfn4qnj!19sChIJvWJpgfHCrAcRoNPkCIdGXUs?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipNOgBV2S6VPY_iErpw96hI27lNZ5BHxs4yaA3fD=w92-h92-k-no", lat: -7.155938, lng: -34.8378127},
+            {nome: "Leve Dog", nota: 4.4, avaliacoes: 384, categoria: "Lanchonete", endereco: "R. Profa. Adelaíde Figueiredo Gouvêia, 220-268", maps_url: "https://www.google.com/maps/place/Leve+Dog/data=!4m7!3m6!1s0x7ace9bd66676183:0xef44c5fd9b8965da!8m2!3d-7.1749601!4d-34.8939166!16s%2Fg%2F11f3x4qcyk!19sChIJg2FnZr3prAcR2mWJm_3FRO8?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSxrHx3Qf_hZbcHgvWD61Sv0pyb3dnQbCxB8kizDTAWS6hAnoMEXYiCMJB6-9MkZI5-kVVdXlBZ9p94eoO9RDpz2DJL1gkr1g0JjNEZ44Fd5OWGiJNClFwJb_oyyDHfeB5cxOgpy=w122-h92-k-no", lat: -7.1749601, lng: -34.8939166},
+            {nome: "O Bisnagão Lanchonete E Tapiocaria", nota: 4.4, avaliacoes: 373, categoria: "Lanchonete", endereco: "R. Maria José Rique, 444", maps_url: "https://www.google.com/maps/place/O+Bisnag%C3%A3o+Lanchonete+E+Tapiocaria/data=!4m7!3m6!1s0x7ace9d3f143fe89:0x84d10e1d88f3a822!8m2!3d-7.1631649!4d-34.8683259!16s%2Fg%2F11c5zv5f7g!19sChIJif5D8dPprAcRIqjziB0O0YQ?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipONVFwiXSrCVCS-7jgSM2SLAhRNxPyv2dj2pqby=w84-h92-k-no", lat: -7.1631649, lng: -34.8683259},
+            {nome: "Restaurante Dona Xica", nota: 4.4, avaliacoes: 323, categoria: "Brasileira", endereco: "R. José Paulo da Silva Lira, 177", maps_url: "https://www.google.com/maps/place/Restaurante+Dona+Xica/data=!4m7!3m6!1s0x7acc286d87145ef:0xde5cc2be02e01ec7!8m2!3d-7.1579568!4d-34.8559587!16s%2Fg%2F11cjkpyl1l!19sChIJ70Vx2IbCrAcRxx7gAr7CXN4?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSwgDwFvCkahaw2ufdvKg8yYfUpwWO5-q5i-e3FklWWqP7zLLozwMVM1LshCo5NSaT7_S8AfqMl3z3Pd1X0Mk2iDumMWnn5g_jbjnw4T6YcabkJovm6ebaSGez0_dIXy5yUYW_eQ9w=w80-h106-k-no", lat: -7.1579568, lng: -34.8559587},
+            {nome: "KIKARNE BURGER - Valentina Figueiredo", nota: 4.4, avaliacoes: 221, categoria: "Lanchonete", endereco: "R. Mariangela Lucena Peixoto, 1411", maps_url: "https://www.google.com/maps/place/KIKARNE+BURGER+-+Valentina+Figueiredo/data=!4m7!3m6!1s0x7acc118c1d4a6ed:0x5b3553f6502d9d48!8m2!3d-7.2044873!4d-34.848469!16s%2Fg%2F11nn36sy2g!19sChIJ7abUwRjBrAcRSJ0tUPZTNVs?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSxrvmfMUAM-msz2QBHoi4f4luK3KUxUGK5sBQ62sUinD2wfbwVMo3B74zQKRNwJgSAETgFK4KV0nCZrbpM6mYh8SUpKyFjHDf9MPiZ0xO3NHJ13atX1n3_8cvv_cItoIt9s-Ec=w122-h92-k-no", lat: -7.2044873, lng: -34.848469},
+            {nome: "Tapiocabana", nota: 4.4, avaliacoes: 167, categoria: "Fast Food", endereco: "Endereço não identificado", maps_url: "https://www.google.com/maps/place/Tapiocabana/data=!4m7!3m6!1s0x7acc28714dae1c7:0xbf318eeeed29b9be!8m2!3d-7.159328!4d-34.8552746!16s%2Fg%2F11g71bzfsm!19sChIJx-HaFIfCrAcRvrkp7e6OMb8?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSzawgjgaRbL2xtCv8frs5OMcU0TwnX7zCvpw7_SfqAZqNSvI1nn_EVWrltv9ClO00jL3aUcrAjmOfHPhE-RDDiCT0ICC9T2whJht7e6gwUAFe47D_OiurWU4rPRkNq80hexU2BSpA=w122-h92-k-no", lat: -7.159328, lng: -34.8552746},
+            {nome: "Tapioca", nota: 4.4, avaliacoes: 29, categoria: "Café", endereco: "Av. Cícera Batista de Luna, 60", maps_url: "https://www.google.com/maps/place/Tapioca/data=!4m7!3m6!1s0x7acea00d061ac83:0x3ac23aace4d12ee0!8m2!3d-7.2000761!4d-34.8646613!16s%2Fg%2F11c2pqp48f!19sChIJg6xh0ADqrAcR4C7R5Kw6wjo?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSwb4YJ7I_ua9rlSYD_BlznRqDvJjHnoraskhz8tNd0j52v1P0tupx5veq3ES5W6fiQwbjf1z9aBwcJQ24bVN5EzWQYPmwh7J2epcm9vM2IDsHLqNaO910CIYplTQMPjWfULDQGZTg=w163-h92-k-no", lat: -7.2000761, lng: -34.8646613},
+            {nome: "Tapioca o amanhecer", nota: 4.4, avaliacoes: 9, categoria: "Cafeteria", endereco: "R. Oscar Lopes Machado, 521", maps_url: "https://www.google.com/maps/place/Tapioca+o+amanhecer/data=!4m7!3m6!1s0x7acc1d36ce685fd:0x3e774b870db3341e!8m2!3d-7.2080944!4d-34.8352885!16s%2Fg%2F11qpw5msyz!19sChIJ_YXmbNPBrAcRHjSzDYdLdz4?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipN3C2HigXMZ21ULokzAatMC0sUWqk1VWTygscmi=w80-h106-k-no", lat: -7.2080944, lng: -34.8352885},
+            {nome: "Collombo Padaria e Restaurante", nota: 4.4, avaliacoes: 2, categoria: "Restaurante", endereco: "R. Júlia Ribeiro da Silva, 261", maps_url: "https://www.google.com/maps/place/Collombo+Padaria+e+Restaurante/data=!4m7!3m6!1s0x7ace83240001313:0x58ea3f545b205625!8m2!3d-7.1554293!4d-34.8748906!16s%2Fg%2F11bxfw_48v!19sChIJExMAQDLorAcRJVYgW1Q_6lg?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSyl1NU_8IAX4YTqWGDa90lF1QMaJdqXFyDVXkbSANwqIVPqdaOHiSn7vVRlcw7ErDwkUM_k0-1yx9K8htgHOEKLBu5xSwN1eq_lJjy8b4yVFrh5gJZWmBw_ErgKGwVNnUIGoGjC=w80-h106-k-no", lat: -7.1554293, lng: -34.8748906},
+            {nome: "DUJU LANCHONETE E PASTELARIA", nota: 4.3, avaliacoes: 424, categoria: "Lanchonete", endereco: "R. Comerciante Álvaro Antero Nascimento, 169", maps_url: "https://www.google.com/maps/place/DUJU+LANCHONETE+E+PASTELARIA/data=!4m7!3m6!1s0x7acc12451a5ab21:0x8bef35b453123217!8m2!3d-7.2078626!4d-34.8508376!16s%2Fg%2F11ghfp5hgt!19sChIJIaulUSTBrAcRFzISU7Q174s?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSyshbdbUXa4UNA812d-uWnMkR38ZkMjT2Ig4tzDbfDYw6bSx2I5TI_YLL0iIAMINOIqoj1o-BpKRJtqBRp87nNQuMJyGUSgPx1jpSmnXeOKT8VX7sjlu9daHjOFPWuJ1zFj8Ks=w122-h92-k-no", lat: -7.2078626, lng: -34.8508376},
+            {nome: "Açai da Hora", nota: 4.3, avaliacoes: 238, categoria: "Lanchonete", endereco: "Av. Valdemar Naziazeno, 885", maps_url: "https://www.google.com/maps/place/A%C3%A7ai+da+Hora/data=!4m7!3m6!1s0x7ace9e87658dcdb:0x5e0b3fdf6eeb306e!8m2!3d-7.1785663!4d-34.8736256!16s%2Fg%2F11b6d5x240!19sChIJ29xYdujprAcRbjDrbt8_C14?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipN834oBwFHaUyKOs0PjlCNFpwsAdxK7lDlzyYNP=w92-h92-k-no", lat: -7.1785663, lng: -34.8736256},
+            {nome: "Willes Burg", nota: 4.3, avaliacoes: 231, categoria: "Lanchonete", endereco: "R. Josefa Taveira, 301", maps_url: "https://www.google.com/maps/place/Willes+Burg/data=!4m7!3m6!1s0x7acc25e4580af23:0x47632cde6a3e22d4!8m2!3d-7.1647859!4d-34.8382494!16s%2Fg%2F11bby3hk_2!19sChIJI6-ARV7CrAcR1CI-at4sY0c?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSx4Rylz2GedA5vC2gImW_VpgGkYAZDFCQRY5Q-36Je7j2Kj_q5Kkv3UqnBzeTaXCGiN7EASbS1_B_RXDOSctK3v2Lztebm7cWP43b4MjNnsE-IUaGCjY3uXrfAH9vl_KastqNk=w80-h106-k-no", lat: -7.1647859, lng: -34.8382494},
+            {nome: "Tenda do Caldinho Parque do Sol SOPARIA & TAPIOCARIA", nota: 4.3, avaliacoes: 16, categoria: "Restaurante", endereco: "R. Joao Maria de Araujo, 1070 - Box4", maps_url: "https://www.google.com/maps/place/Tenda+do+Caldinho+Parque+do+Sol+SOPARIA+%26+TAPIOCARIA/data=!4m7!3m6!1s0x7acc1003c77306b:0xc1deb26534da17f4!8m2!3d-7.2184779!4d-34.8462771!16s%2Fg%2F11vwfww_3c!19sChIJazB3PADBrAcR9BfaNGWy3sE?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipMdgrxooV8YldSg_znbJMhWMk7hPVFuJe30y4vE=w80-h177-k-no", lat: -7.2184779, lng: -34.8462771},
+            {nome: "Tapiocaria & Restaurante Do Juca", nota: 4.2, avaliacoes: 302, categoria: "Restaurante", endereco: "R. Fernando Cunha Lima, 1078", maps_url: "https://www.google.com/maps/place/Tapiocaria+%26+Restaurante+Do+Juca/data=!4m7!3m6!1s0x7ace9db2944c965:0x65fcc9110c13a3fc!8m2!3d-7.1613428!4d-34.8782235!16s%2Fg%2F11g1ppxnwr!19sChIJZclEKdvprAcR_KMTDBHJ_GU?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSwRrkFw_ci5-K6pv1SeN2dNZMbDmqhrecN5nuWZMv747ynN7y01vetuB7Kwbt_4J8BgaAFHtvxM6qfKBsuEegbJVEkUyrX9ILtkwSkc2ZtGHw6QDbKoP3RvF3YZjdKTJK40XqJa=w80-h142-k-no", lat: -7.1613428, lng: -34.8782235},
+            {nome: "Ki-Tapioca", nota: 4.2, avaliacoes: 5, categoria: "Restaurante", endereco: "R. Flodoaldo Peixoto Filho, 13", maps_url: "https://www.google.com/maps/place/Ki-Tapioca/data=!4m7!3m6!1s0x7acc1f98449d3b1:0x92b143c4124db359!8m2!3d-7.201295!4d-34.8535668!16s%2Fg%2F11f31qdb8r!19sChIJsdNJhPnBrAcRWbNNEsRDsZI?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipNGaXfHT_GanQkbls2tMPjzh8F-OMf21Fo-MMB0=w80-h92-k-no", lat: -7.201295, lng: -34.8535668},
+            {nome: "pump33", nota: 4.2, avaliacoes: 5, categoria: "Loja de Conveniência", endereco: "R. Inspetora Emilia Mendonca Gomes, 195", maps_url: "https://www.google.com/maps/place/pump33/data=!4m7!3m6!1s0x7acc1ef24942f8f:0x3fb9802f9266d722!8m2!3d-7.2062131!4d-34.8449764!16s%2Fg%2F11j929xcwl!19sChIJjy-UJO_BrAcRItdmki-AuT8?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-proxy/ALd4DhFm1H0yYGeuQH96bQ1SGIcrxECl_HxeJDTLad7m8DGE6Lc9sMmZyIv2FZt5WAnkg6f3tVjfiTsGM_uTzTIyYjDoDbAA9udbIT3Bb72Ij17zskPmONFTCvMO1n8lQtqSOTqfU8jeb0W9UcuftezpTEfHDtxqPthAS1WAzZCr6NrmJOQgINNnnwu9=w92-h92-k-no", lat: -7.2062131, lng: -34.8449764},
+            {nome: "Tapioca da Paraibana", nota: 4.1, avaliacoes: 54, categoria: "Lanchonete", endereco: "Comp.Alim. Varandas de Tambaú - Av. Alm. Tamandaré, Box 06", maps_url: "https://www.google.com/maps/place/Tapioca+da+Paraibana/data=!4m7!3m6!1s0x7acdd21435c3abf:0xe6785c79b1b7bf64!8m2!3d-7.1122004!4d-34.8231094!16s%2Fg%2F11b67jfmpn!19sChIJvzpcQyHdrAcRZL-3sXlceOY?authuser=0&hl=pt-BR&rclk=1", imagem_url: "", lat: -7.1122004, lng: -34.8231094},
+            {nome: "Via Sul Restaurante", nota: 4.1, avaliacoes: 8, categoria: "Restaurante", endereco: "R. José de Carvalho Costa Filho, 402", maps_url: "https://www.google.com/maps/place/Via+Sul+Restaurante/data=!4m7!3m6!1s0x7ace90021d4f555:0x79475d425953c449!8m2!3d-7.2056134!4d-34.8715563!16s%2Fg%2F11y6jddsq_!19sChIJVfXUIQDprAcRScRTWUJdR3k?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipOb2LrHp2DRg4qKbD3JMLdMGTfqX4544d_baTll=w80-h106-k-no", lat: -7.2056134, lng: -34.8715563},
+            {nome: "Dona Tapioca", nota: 4.1, avaliacoes: 7, categoria: "Lanchonete", endereco: "Endereço não identificado", maps_url: "https://www.google.com/maps/place/Dona+Tapioca/data=!4m7!3m6!1s0x7acc2470ffdfe6f:0xa84744bc11ae09a2!8m2!3d-7.1789252!4d-34.8326808!16s%2Fg%2F11g8cqx3lw!19sChIJb_79D0fCrAcRogmuEbxER6g?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSyc6LBZRcn80xxM0w2Lzn8wwVjjqLPPfgULQdfE2OkBlhvrAnmPPq1j9wxkeDysLeH0KLPZi-P3ebYJQjuJ34M13vXCu22I1jpStklPo7yZLs7TMStaIhzcwyBLkiImsQHqe-3H=w163-h92-k-no", lat: -7.1789252, lng: -34.8326808},
+            {nome: "Rainha Da Tapioca Nordestina", nota: 3.9, avaliacoes: 308, categoria: "Lanchonete", endereco: "Av. Alm. Tamandaré, 228", maps_url: "https://www.google.com/maps/place/Rainha+Da+Tapioca+Nordestina/data=!4m7!3m6!1s0x7acdd26945c87e1:0xa2ec3604ed67dc6b!8m2!3d-7.1122967!4d-34.8229756!16s%2Fg%2F11g6vjk9fb!19sChIJ4YdclCbdrAcRa9xn7QQ27KI?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipMMtspxky4s2JYjy-7FnHLbAXpjQoEOWbvicYFb=w80-h106-k-no", lat: -7.1122967, lng: -34.8229756},
+            {nome: "N1 BURGUER - BANCÁRIOS", nota: 3.4, avaliacoes: 51, categoria: "Hambúrguer", endereco: "Av. Frei Galvão, 45", maps_url: "https://www.google.com/maps/place/N1+BURGUER+-+BANC%C3%81RIOS/data=!4m7!3m6!1s0x7acc3b539eaecdd:0x9128569efbbc972!8m2!3d-7.2053982!4d-34.8570064!16s%2Fg%2F11vjccmln7!19sChIJ3ezqObXDrAcRcsm772mFEgk?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipPxEVnPDLyq0aWQsu4Xuro88dokLURKGTDcy_E6=w80-h106-k-no", lat: -7.2053982, lng: -34.8570064},
+            {nome: "Agua na boca lanches e tapiocas", nota: 3.0, avaliacoes: 1, categoria: "Lanchonete", endereco: "Endereço não identificado", maps_url: "https://www.google.com/maps/place/Agua+na+boca+lanches+e+tapiocas/data=!4m7!3m6!1s0x7acc39992b318e5:0x2037f91e029e6340!8m2!3d-7.180463!4d-34.8430352!16s%2Fg%2F11fn98ls0_!19sChIJ5RizkpnDrAcRQGOeAh75NyA?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSypTrQxT4qYOegERfoSVqNHY8wIgKcK22Gg0CTaMeSmN9IQN5Pde0zF2zAIWFI2GyZWVyjPV7N1FCiW7zOOjr_obiPAziHWa0j7zmU35ZOpJI4fb6n0wjFrftGWte19-e512z4=w163-h92-k-no", lat: -7.180463, lng: -34.8430352},
+            {nome: "PONTO DA TAPIOCA & COMIDA REGIONAL", nota: 0, avaliacoes: 0, categoria: "Lanchonete", endereco: "R. Comerciante Álvaro Antero Nascimento, 79", maps_url: "https://www.google.com/maps/place/PONTO+DA+TAPIOCA+%26+COMIDA+REGIONAL/data=!4m7!3m6!1s0x7acc1fb314552e3:0xf9bb07cd98f70723!8m2!3d-7.2075053!4d-34.8515529!16s%2Fg%2F11v_91qjv8!19sChIJ41JFMfvBrAcRIwf3mM0Hu_k?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSztnyfnZS6-LsJmfm_7erkrih2X9OgWGXWQYDSECCURU3wojWc3BL4Py3IYluztazl04pw_9-KIUEZYCCCqr5Df1sBrrdTMVYB_1uavGKSUDAkBgUpcIt8d9DvYXHicF33dk-Ja=w80-h106-k-no", lat: -7.2075053, lng: -34.8515529},
+            {nome: "Tapioca saborear", nota: 0, avaliacoes: 0, categoria: "Fast food no estilo de Hong Kong", endereco: "Endereço não identificado", maps_url: "https://www.google.com/maps/place/Tapioca+saborear/data=!4m7!3m6!1s0x7acc3da02c01ee7:0x1e85052a0fd04476!8m2!3d-7.1683023!4d-34.8386325!16s%2Fg%2F11ypl_p91y!19sChIJ5x7AAtrDrAcRdkTQDyoFhR4?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipMhoSPf2Y4qQxrPIFMJ_5UzqUcbtAb6KJIJ8kd7=w80-h106-k-no", lat: -7.1683023, lng: -34.8386325},
+            {nome: "Sertão tapiocaria", nota: 0, avaliacoes: 0, categoria: "Sebo", endereco: "Endereço não identificado", maps_url: "https://www.google.com/maps/place/Sert%C3%A3o+tapiocaria/data=!4m7!3m6!1s0x7acc188015d53d7:0x485d1bf9f1cc7d97!8m2!3d-7.219109!4d-34.8461191!16s%2Fg%2F11xzhqf6pz!19sChIJ11NdAYjBrAcRl33M8fkbXUg?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipOaWbiNun8wLf-e5AFCK-5ryOyHLKySgir4HH-d=w204-h92-k-no", lat: -7.219109, lng: -34.8461191},
+            {nome: "Tapioca de Mainha", nota: 0, avaliacoes: 0, categoria: "Lanchonete", endereco: "R. Filomena Maria de Pontes, 156", maps_url: "https://www.google.com/maps/place/Tapioca+de+Mainha/data=!4m7!3m6!1s0x7acc31cef1a4401:0xfe471e296c3e07d3!8m2!3d-7.1728969!4d-34.8370492!16s%2Fg%2F11x2vt856f!19sChIJAUQa7xzDrAcR0wc-bCkeR_4?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/p/AF1QipMWAPEgdhYahvSMWJDnavWYMMdQXYh0E3NHcxwB=w80-h106-k-no", lat: -7.1728969, lng: -34.8370492},
+            {nome: "M&M Sabores", nota: 0, avaliacoes: 0, categoria: "Hambúrguer", endereco: "Endereço não identificado", maps_url: "https://www.google.com/maps/place/M%26M+Sabores/data=!4m7!3m6!1s0x7acc3de652d04b7:0xfe687c6ab288bfb4!8m2!3d-7.1788957!4d-34.8320256!16s%2Fg%2F11rg2nmr67!19sChIJtwQtZd7DrAcRtL-Ismp8aP4?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=KqZQ8XYJkaYwohDIkNL2pw&cb_client=search.gws-prod.gps&w=80&h=92&yaw=355.37186&pitch=0&thumbfov=100", lat: -7.1788957, lng: -34.8320256},
+                        { nome: "Tapioca do Lula", nota: 0, avaliacoes: 0, categoria: "Restaurante", endereco: "Mercado Público do Geisel - R. Dep. Petrônio Figueiredo, 99", maps_url: "https://www.google.com/maps/place/Tapioca+do+Lula/data=!4m7!3m6!1s0x7ace936ad3cba4d:0xa046d41aff19d34b!8m2!3d-7.1771844!4d-34.8686155!16s%2Fg%2F11j2c8k8zn!19sChIJTbo8rTbprAcRS9MZ_xrURqA?authuser=0&hl=pt-BR&rclk=1", imagem_url: "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSwPfng0oG8H8lcSwhfYTBtoRE6pUfMK-fNsoskhv5-AvpCGwx2C4C91OptsjEfcHMkD3lWzQOJw0LftPQXEwPcx6zY9aVHy0pDrZ8OqCJobGAN-9Bf-UyuPLjqMXdQvo3Smgjpp=w80-h106-k-no", lat: -7.1771844, lng: -34.8686155 },
+        ];
+
+        // Variáveis globais
+        let filteredData = [...tapiocariasData];
+        let map, markers = [];
+        let categoryChart, ratingReviewsChart, topRatedChart;
+        let isChartPie = true;
+
+        // Inicialização do dashboard
+        document.addEventListener('DOMContentLoaded', function () {
+            // Inicializar estatísticas
+            updateStats();
+
+            // Inicializar filtros
+            populateCategoryFilter();
+
+            // Inicializar mapa
+            initMap();
+
+            // Inicializar gráficos
+            initCharts();
+
+            // Renderizar tabela
+            renderTable();
+
+            // Adicionar eventos aos filtros
+            document.getElementById('apply-filters').addEventListener('click', applyFilters);
+            document.getElementById('export-data').addEventListener('click', exportData);
+            document.getElementById('toggle-chart-type').addEventListener('click', toggleChartType);
+
+            // Adicionar eventos de tecla para o campo de busca
+            document.getElementById('search-filter').addEventListener('keyup', function (e) {
+                if (e.key === 'Enter') {
+                    applyFilters();
+                }
+            });
+
+            // Ajustar altura do mapa em mobile
+            adjustMapHeight();
+            window.addEventListener('resize', adjustMapHeight);
+        });
+
+        // Ajusta a altura do mapa para melhor visualização em mobile
+        function adjustMapHeight() {
+            const mapContainer = document.getElementById('map');
+            const cardContent = document.querySelector('.card-content');
+            
+            if (window.innerWidth < 768) {
+                // Em mobile, usar altura menor para o mapa
+                cardContent.style.height = '300px';
+            } else {
+                // Em tablets e desktops, altura normal
+                cardContent.style.height = window.innerWidth < 992 ? '350px' : '400px';
+            }
+        }
+
+        // Popula o filtro de categoria com as categorias únicas
+        function populateCategoryFilter() {
+            const categories = [...new Set(tapiocariasData.map(item => item.categoria))].sort();
+            const filter = document.getElementById('category-filter');
+
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                filter.appendChild(option);
+            });
+        }
+
+        // Inicializa o mapa
+        function initMap() {
+            // Centro aproximado de João Pessoa
+            map = L.map('map').setView([-7.15, -34.85], 12);
+
+            // Adicionar camada do OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // Adicionar marcadores
+            updateMapMarkers();
+        }
+
+        // Atualiza os marcadores no mapa com base nos dados filtrados
+        function updateMapMarkers() {
+            // Remover marcadores existentes
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+
+            // Adicionar novos marcadores
+            filteredData.forEach(restaurant => {
+                // Determinar a cor do marcador com base na avaliação
+                let markerColor;
+                if (restaurant.nota >= 4.5) markerColor = '#4CAF50';
+                else if (restaurant.nota >= 4.0) markerColor = '#FFC107';
+                else if (restaurant.nota >= 3.0) markerColor = '#FF9800';
+                else markerColor = '#F44336';
+
+                // Criar marcador
+                const marker = L.circleMarker([restaurant.lat, restaurant.lng], {
+                    color: markerColor,
+                    fillColor: markerColor,
+                    fillOpacity: 0.7,
+                    radius: window.innerWidth < 768 ? 6 : 8
+                }).addTo(map);
+
+                // Adicionar popup com informações
+                marker.bindPopup(`
+                    <div style="font-weight: bold; margin-bottom: 5px; font-size: 0.9rem;">${restaurant.nome}</div>
+                    <div><span style="color: #FFA726; font-weight: bold;">${restaurant.nota}</span> (${restaurant.avaliacoes} avaliações)</div>
+                    <div style="margin-top: 5px;">${restaurant.categoria}</div>
+                    <div style="margin-top: 5px; font-size: 0.8em;">${restaurant.endereco}</div>
+                    <div style="margin-top: 8px;">
+                        <a href="${restaurant.maps_url}" target="_blank" style="color: #1976D2; text-decoration: none; font-size: 0.9rem;">
+                            <i class="fas fa-external-link-alt"></i> Ver no Google Maps
+                        </a>
+                    </div>
+                `);
+
+                markers.push(marker);
+            });
+
+            // Atualizar contador no cabeçalho do mapa
+            document.getElementById('map-count').textContent = filteredData.length;
+
+            // Ajustar visão do mapa se houver marcadores
+            if (filteredData.length > 0) {
+                const group = new L.featureGroup(markers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+
+        // Inicializa os gráficos
+        function initCharts() {
+            // Gráfico de distribuição por categoria
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            createCategoryChart(categoryCtx, 'pie');
+
+            // Gráfico de avaliação vs. número de avaliações
+            const ratingReviewsCtx = document.getElementById('ratingReviewsChart').getContext('2d');
+            createRatingReviewsChart(ratingReviewsCtx);
+
+            // Gráfico das top 10 avaliadas
+            const topRatedCtx = document.getElementById('topRatedChart').getContext('2d');
+            createTopRatedChart(topRatedCtx);
+        }
+
+        // Cria gráfico de distribuição por categoria
+        function createCategoryChart(ctx, chartType) {
+            // Calcular distribuição por categoria
+            const categoryCount = {};
+            filteredData.forEach(restaurant => {
+                categoryCount[restaurant.categoria] = (categoryCount[restaurant.categoria] || 0) + 1;
+            });
+
+            const categories = Object.keys(categoryCount);
+            const counts = Object.values(categoryCount);
+
+            // Cores para as categorias
+            const backgroundColors = [
+                '#FF6B6B', '#4ECDC4', '#FFA726', '#42A5F5', '#66BB6A',
+                '#AB47BC', '#26C6DA', '#D4E157', '#FF7043', '#8D6E63',
+                '#78909C', '#EC407A', '#7E57C2', '#5C6BC0', '#26A69A'
+            ];
+
+            if (categoryChart) {
+                categoryChart.destroy();
+            }
+
+            // Ajustar opções para mobile
+            const isMobile = window.innerWidth < 768;
+            const legendPosition = isMobile ? 'bottom' : 'right';
+            const legendFontSize = isMobile ? 10 : 11;
+
+            if (chartType === 'pie' || chartType === 'doughnut') {
+                categoryChart = new Chart(ctx, {
+                    type: chartType,
+                    data: {
+                        labels: categories,
+                        datasets: [{
+                            data: counts,
+                            backgroundColor: backgroundColors.slice(0, categories.length),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: legendPosition,
+                                labels: {
+                                    boxWidth: 12,
+                                    font: {
+                                        size: legendFontSize
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = Math.round((value / total) * 100);
+                                        return `${label}: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                // Gráfico de barras
+                categoryChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: categories,
+                        datasets: [{
+                            label: 'Número de Tapiocarias',
+                            data: counts,
+                            backgroundColor: backgroundColors.slice(0, categories.length),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: isMobile ? 45 : 0,
+                                    minRotation: isMobile ? 45 : 0,
+                                    font: {
+                                        size: isMobile ? 10 : 11
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Cria gráfico de avaliação vs. número de avaliações
+        function createRatingReviewsChart(ctx) {
+            // Ordenar por número de avaliações
+            const sortedData = [...filteredData].sort((a, b) => b.avaliacoes - a.avaliacoes);
+            const topData = window.innerWidth < 768 ? sortedData.slice(0, 10) : sortedData.slice(0, 20);
+
+            const isMobile = window.innerWidth < 768;
+            const labels = topData.map(r => {
+                if (isMobile && r.nome.length > 15) {
+                    return r.nome.substring(0, 15) + '...';
+                } else if (!isMobile && r.nome.length > 20) {
+                    return r.nome.substring(0, 20) + '...';
+                }
+                return r.nome;
+            });
+
+            if (ratingReviewsChart) {
+                ratingReviewsChart.destroy();
+            }
+
+            ratingReviewsChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Avaliação',
+                            data: topData.map(r => ({ x: r.avaliacoes, y: r.nota })),
+                            backgroundColor: '#FFA726',
+                            borderColor: '#FF9800',
+                            borderWidth: 1,
+                            pointRadius: isMobile ? 5 : 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const restaurant = topData[context.dataIndex];
+                                    return [
+                                        `${restaurant.nome}`,
+                                        `Avaliação: ${restaurant.nota}`,
+                                        `Nº de Avaliações: ${restaurant.avaliacoes}`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Avaliação (0-5)'
+                            },
+                            min: 0,
+                            max: 5.1
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Número de Avaliações'
+                            },
+                            type: 'linear',
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Cria gráfico das top 10 avaliadas
+        function createTopRatedChart(ctx) {
+            // Ordenar por avaliação e depois por número de avaliações
+            const sortedData = [...filteredData]
+                .filter(r => r.avaliacoes > 0) // Remover locais sem avaliações
+                .sort((a, b) => {
+                    if (b.nota !== a.nota) return b.nota - a.nota;
+                    return b.avaliacoes - a.avaliacoes;
+                })
+                .slice(0, 10);
+
+            const isMobile = window.innerWidth < 768;
+            const labels = sortedData.map(r => {
+                if (isMobile && r.nome.length > 15) {
+                    return r.nome.substring(0, 15) + '...';
+                } else if (!isMobile && r.nome.length > 20) {
+                    return r.nome.substring(0, 20) + '...';
+                }
+                return r.nome;
+            });
+
+            const ratings = sortedData.map(r => r.nota);
+            const reviews = sortedData.map(r => r.avaliacoes);
+
+            if (topRatedChart) {
+                topRatedChart.destroy();
+            }
+
+            topRatedChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Avaliação',
+                            data: ratings,
+                            backgroundColor: '#FFA726',
+                            borderColor: '#FF9800',
+                            borderWidth: 1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Nº de Avaliações',
+                            data: reviews,
+                            backgroundColor: 'rgba(76, 175, 80, 0.5)',
+                            borderColor: '#4CAF50',
+                            borderWidth: 1,
+                            yAxisID: 'y1',
+                            type: 'line',
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const label = context.dataset.label || '';
+                                    const value = context.parsed.y;
+                                    if (context.datasetIndex === 0) {
+                                        return `Avaliação: ${value}`;
+                                    } else {
+                                        return `Nº de Avaliações: ${value}`;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: isMobile ? 10 : 11
+                                }
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Avaliação'
+                            },
+                            min: 0,
+                            max: 5.1
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Nº de Avaliações'
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            min: 0
+                        }
+                    }
+                }
+            });
+        }
+
+        // Aplica os filtros
+        function applyFilters() {
+            const categoryFilter = document.getElementById('category-filter').value;
+            const ratingFilter = parseFloat(document.getElementById('rating-filter').value);
+            const reviewsFilter = parseInt(document.getElementById('reviews-filter').value) || 0;
+            const searchFilter = document.getElementById('search-filter').value.toLowerCase();
+
+            // Aplicar filtros
+            filteredData = tapiocariasData.filter(restaurant => {
+                // Filtro de categoria
+                if (categoryFilter !== 'all' && restaurant.categoria !== categoryFilter) {
+                    return false;
+                }
+
+                // Filtro de nota mínima
+                if (ratingFilter > 0 && restaurant.nota < ratingFilter) {
+                    return false;
+                }
+
+                // Filtro de número mínimo de avaliações
+                if (restaurant.avaliacoes < reviewsFilter) {
+                    return false;
+                }
+
+                // Filtro de busca por nome
+                if (searchFilter && !restaurant.nome.toLowerCase().includes(searchFilter)) {
+                    return false;
+                }
+
+                return true;
+            });
+
+            // Atualizar componentes do dashboard
+            updateStats();
+            updateMapMarkers();
+            updateCharts();
+            renderTable();
+        }
+
+        // Atualiza as estatísticas
+        function updateStats() {
+            const totalRestaurants = filteredData.length;
+            const avgRating = totalRestaurants > 0
+                ? (filteredData.reduce((sum, r) => sum + r.nota, 0) / totalRestaurants).toFixed(1)
+                : '0.0';
+            const totalReviews = filteredData.reduce((sum, r) => sum + r.avaliacoes, 0);
+
+            document.getElementById('total-restaurants').textContent = totalRestaurants;
+            document.getElementById('avg-rating').textContent = avgRating;
+            document.getElementById('total-reviews').textContent = totalReviews;
+        }
+
+        // Atualiza os gráficos
+        function updateCharts() {
+            // Destruir gráficos existentes
+            if (categoryChart) categoryChart.destroy();
+            if (ratingReviewsChart) ratingReviewsChart.destroy();
+            if (topRatedChart) topRatedChart.destroy();
+
+            // Recriar gráficos com dados filtrados
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            createCategoryChart(categoryCtx, isChartPie ? 'pie' : 'bar');
+
+            const ratingReviewsCtx = document.getElementById('ratingReviewsChart').getContext('2d');
+            createRatingReviewsChart(ratingReviewsCtx);
+
+            const topRatedCtx = document.getElementById('topRatedChart').getContext('2d');
+            createTopRatedChart(topRatedCtx);
+        }
+
+        // Alterna entre gráfico de pizza e de barras
+        function toggleChartType() {
+            isChartPie = !isChartPie;
+
+            // Destruir gráfico atual
+            if (categoryChart) categoryChart.destroy();
+
+            // Recriar gráfico com novo tipo
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            createCategoryChart(categoryCtx, isChartPie ? 'pie' : 'bar');
+
+            // Atualizar ícone
+            const toggleBtn = document.getElementById('toggle-chart-type');
+            toggleBtn.innerHTML = isChartPie ? '<i class="fas fa-chart-bar"></i>' : '<i class="fas fa-chart-pie"></i>';
+        }
+
+        // Renderiza a tabela com os dados filtrados
+        function renderTable() {
+            const tableBody = document.getElementById('restaurants-table-body');
+            tableBody.innerHTML = '';
+
+            if (filteredData.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="empty-state">
+                            <i class="fas fa-search"></i>
+                            <p>Nenhuma tapiocaria encontrada com os filtros aplicados</p>
+                            <p style="font-size: 0.8rem; margin-top: 10px;">Tente ajustar os critérios de busca</p>
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('table-count').textContent = '0';
+                return;
+            }
+
+            // Ordenar por avaliação (decrescente) e depois por número de avaliações (decrescente)
+            const sortedData = [...filteredData].sort((a, b) => {
+                if (b.nota !== a.nota) return b.nota - a.nota;
+                return b.avaliacoes - a.avaliacoes;
+            });
+
+            sortedData.forEach((restaurant, index) => {
+                const row = document.createElement('tr');
+                if (index < 5) {
+                    row.classList.add('highlight');
+                }
+
+                // Determinar ícone de estrela com base na avaliação
+                let stars = '';
+                const rating = restaurant.nota;
+                for (let i = 1; i <= 5; i++) {
+                    if (rating >= i) {
+                        stars += '<i class="fas fa-star"></i>';
+                    } else if (rating >= i - 0.5) {
+                        stars += '<i class="fas fa-star-half-alt"></i>';
+                    } else {
+                        stars += '<i class="far fa-star"></i>';
+                    }
+                }
+
+                // Ajustar tamanho do endereço para mobile
+                const isMobile = window.innerWidth < 576;
+                let enderecoDisplay = restaurant.endereco;
+                if (isMobile && enderecoDisplay.length > 30) {
+                    enderecoDisplay = enderecoDisplay.substring(0, 30) + '...';
+                }
+
+                row.innerHTML = `
+                    <td><strong>${restaurant.nome}</strong></td>
+                    <td>
+                        <div class="rating">${stars} ${restaurant.nota}</div>
+                    </td>
+                    <td><span class="reviews">${restaurant.avaliacoes} avaliações</span></td>
+                    <td><span class="category-badge">${restaurant.categoria}</span></td>
+                    <td>${enderecoDisplay}</td>
+                    <td class="table-actions">
+                        <a href="${restaurant.maps_url}" target="_blank" class="btn" style="padding: 5px 10px; font-size: 0.8rem;">
+                            <i class="fas fa-external-link-alt"></i> Maps
+                        </a>
+                    </td>
+                `;
+
+                tableBody.appendChild(row);
+            });
+
+            // Atualizar contador na tabela
+            document.getElementById('table-count').textContent = filteredData.length;
+        }
+
+        // Exporta os dados filtrados para CSV
+        function exportData() {
+            // Criar cabeçalhos CSV
+            let csvContent = "nome;nota;avaliacoes;categoria;endereco;maps_url;imagem_url\n";
+
+            // Adicionar dados
+            filteredData.forEach(restaurant => {
+                csvContent += `"${restaurant.nome}";${restaurant.nota};${restaurant.avaliacoes};"${restaurant.categoria}";"${restaurant.endereco}";"${restaurant.maps_url}";"${restaurant.imagem_url}"\n`;
+            });
+
+            // Criar blob e fazer download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'tapiocarias_filtradas.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+
+</html>
